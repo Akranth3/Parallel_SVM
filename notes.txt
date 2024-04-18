@@ -1,2 +1,3 @@
 
-- update 18th april, 14:42 stopped at implementing a loader function for loading csv files into program
+Todo
+- complete the serial code for SVM, have the functionaloty of kernel in it.
