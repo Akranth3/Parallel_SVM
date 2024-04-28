@@ -1,0 +1,3 @@
+
+Todo
+- complete the serial code for SVM, have the functionaloty of kernel in it.
