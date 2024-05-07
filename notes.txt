@@ -1,3 +1,5 @@
 
 Todo
-- complete the serial code for SVM, have the functionaloty of kernel in it.
+- complete the serial code for SVM, have the functionality of kernel in it.
+- add the read_csv() file to a module so that you can import it
+- - there is a bug in serial_svm program, fix it.
