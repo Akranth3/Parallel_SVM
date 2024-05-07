@@ -8,7 +8,7 @@
 
 
 
-void read_csv(char *filename, int num_data_points, int num_features, double data[num_data_points][num_features]){
+void read_csv(char *filename, int num_data_points, int num_features, double data[num_data_points][num_features+1]){
 
     /*Function that reads the csv data and poppulates an array*/
 
@@ -27,13 +27,19 @@ void read_csv(char *filename, int num_data_points, int num_features, double data
             int count = 0;
             token = strtok(line, ",");
             while (token != NULL) {
-                if (count >= 1 && count <= 4) {
+                if (count >= 1 && count <= num_features) {
                     data[i-1][count-1] = atof(token);
+                }
+                if(count==num_features+1){
+                    char *end = strtok(token, "\n");
+                    data[i-1][count-1] = atof(end);
                 }
                 /*When strtok is called with NULL as the first argument, it continues tokenizing the same string from where it left off in the previous call.*/
                 token = strtok(NULL, ",");
                 count++;
             }
+            // printf("Data point %d is %f %f %f\n", i, data[i-1][0], data[i-1][1], data[i-1][2]);
+
         }
         i++;
     }
@@ -54,9 +60,10 @@ int main(){
     //populating the array with the data
     read_csv(filename, num_points, num_features, data);
     printf("Data read successfully\n");
-    printf("the first data point is %f %f %f\n", data[0][0], data[0][1], data[0][2]);
+    int i=1;
+    printf("Data point %d is %f %f %f\n", i, data[i-1][0], data[i-1][1], data[i-1][2]);
     
-    double w[num_features-1];
+    double w[num_features];
     double b = 0.0;
     double alpha = 0.001;
     int num_iterations = 1000;
@@ -71,19 +78,19 @@ int main(){
         for(int j=0; j<num_points; j++){
             double y = data[j][num_features];
             double sum = 0;
-            for(int k=0; k<num_features-1; k++){
+            for(int k=0; k<num_features; k++){
                 sum += w[k]*data[j][k];
             }
             double z = y*(sum - b);
             if(z < 1){
-                for(int k=0; k<num_features-1; k++){
-                    w[k] = w[k] - alpha*(2*lamda*w[k] - y*data[j][k]);
+                for(int k=0; k<num_features; k++){
+                    w[k] = w[k] - alpha*(2.0*lamda*w[k] - y*data[j][k]);
                 }
                 b = b - alpha*y;
             }
             else{
-                for(int k=0; k<num_features-1; k++){
-                    w[k] = w[k] - alpha*(2*lamda*w[k]);
+                for(int k=0; k<num_features; k++){
+                    w[k] = w[k] - alpha*(2.0*lamda*w[k]);
                 }
             }
         }
@@ -95,7 +102,7 @@ int main(){
         exit(1);
     }
     fprintf(file,"w,b\n");
-    for(int i=0; i<num_features-1; i++){
+    for(int i=0; i<num_features; i++){
         fprintf(file, "%f,%f\n", w[i], b);
     }
     fclose(file);
