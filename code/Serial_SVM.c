@@ -70,6 +70,7 @@ int main(){
     double lamda = 0.01;
 
     //initializing the weights and bias
+    clock_t start_time = clock();
     for(int i=0; i<num_features-1; i++){
         w[i] = 0;
     }
@@ -94,8 +95,11 @@ int main(){
                 }
             }
         }
-
     }
+
+    clock_t end_time = clock();
+    double execution_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+    printf("Execution time: %f seconds\n", execution_time);
     FILE *file = fopen("../model/Two_class/model.csv", "w");
     if(file == NULL){
         printf("Error: File not found\n");
