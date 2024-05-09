@@ -50,27 +50,29 @@ void read_csv(char *filename, int num_data_points, int num_features, double data
 int main(int argc, char **argv){
 
     printf("Running the Parallel MPI version of SVM code\n");
-    MPI_INIT(&argc, &argv);
+    MPI_Init(&argc, &argv);
     int rank, size;
-    MPI_COMM_RANK(MPI_COMM_WORLD, &rank);
-    MPT_COMM_SIZE(MPI_COMM_WORLD, &size);       
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    printf("Hello from rank %d of %d\n", rank, size);
 
-    double w[num_features];
-    double global_w[num_features];
+
     double b = 0.0;
     double alpha = 0.001;
-    int num_iterations = 1000;
+    int num_iterations = 10;
     double lamda = 0.01;
     int num_points = 200;
-    int num_features = 2; 
-    double **data;
+    int num_features = 2;
+    double data[num_points][num_features+1];
+    double w[num_features];
+    double global_w[num_features];
+    double global_b = 0.0;
+
     if(rank == 0){
-        data = (double **)malloc(num_points*sizeof(double *));
-        for(int i=0; i<num_points; i++){
-            data[i] = (double *)malloc((num_features+1)*sizeof(double));
-        }
+        // data = (double **)malloc(num_points*sizeof(double *));
+        // for(int i=0; i<num_points; i++){
+        //     data[i] = (double *)malloc((num_features+1)*sizeof(double));
+        // }
         char filename[100];
         sprintf(filename, "../Data/Two_class/data.csv");
 
@@ -81,37 +83,44 @@ int main(int argc, char **argv){
         int i=1;
         printf("Data point %d is %f %f %f\n", i, data[i-1][0], data[i-1][1], data[i-1][2]);
     }
-    
+
 
     //Master node reads the data and distributes it to the worker nodes
 
     int n_num_points = num_points/size;
     double local_data[n_num_points][num_features+1];
 
-    MPI_SCATTER(data, n_num_points*(num_features+1), MPI_DOUBLE, local_data, n_num_points*(num_features+1), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Scatter(data, n_num_points*(num_features+1), MPI_DOUBLE, local_data, n_num_points*(num_features+1), MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-    
+    printf("Data Scattered\n");
+    printf("Sanity check: Data point %d in rank %d is %f %f %f\n", 1, rank, local_data[0][0], local_data[0][1], local_data[0][2]);
 
     //initializing the weights and bias
-    clock_t start_time = clock();
-    for(int i=0; i<num_features-1; i++){
+    for(int i=0; i<num_features; i++){
         w[i] = 0;
+        global_w[i] = 0;
     }
 
-    for(int i=0; i<num_iterations; i++){
+    MPI_Barrier(MPI_COMM_WORLD);
 
+    // for(int i=0; i<num_features;i++){
+    //     printf("w[%d] = %f, rank = %d\n", i, w[i],rank);
+    // }
+    for(int i=0; i<num_iterations; i++){
+        
         for(int j=0; j<n_num_points; j++){
             double y = local_data[j][num_features];
             double sum = 0;
             for(int k=0; k<num_features; k++){
+                // printf("local_data[%d][%d] is %f, w[%d] = %f\n", j, k, local_data[j][k], k ,w[k]);
                 sum += w[k]*local_data[j][k];
             }
 
             double z = y*(sum - b);
-
+            // printf("sum is %f, b is %f, y is %f, z is %f, rank = %d\n",sum, b,y,z, rank);
             if(z < 1){
                 for(int k=0; k<num_features; k++){
-                    w[k] = w[k] - alpha*(2.0*lamda*w[k] - y*data[j][k]);
+                    w[k] = w[k] - alpha*(2.0*lamda*w[k] - y*local_data[j][k]);
                 }
                 b = b - alpha*y;
             }
@@ -121,28 +130,35 @@ int main(int argc, char **argv){
                 }
             }
         }
+        printf("b is %f, rank = %d\n", b, rank);
         MPI_Reduce(w, global_w, num_features, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-        for(int i=0; i<num_features; i++) w[i] = global_w[i];
+        MPI_Reduce(&b, &global_b, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+        MPI_Bcast(global_w, num_features, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&global_b, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        for(int k=0; k<num_features; k++){
+            w[k] = global_w[k];
+        }
+        b = global_b;
         MPI_Barrier(MPI_COMM_WORLD);
+        printf("after one complete iter, b is %f, rank = %d\n", b, rank);
 
     }
-
-    clock_t end_time = clock();
-    double execution_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
-    printf("Execution time: %f seconds\n", execution_time);
 
     if(rank==0){
-    FILE *file = fopen("../model/Two_class/model_MPI.csv", "w");
-    if(file == NULL){
-        printf("Error: File not found\n");
-        exit(1);
+                printf("Saving the data to file\n");
+            FILE *file = fopen("../model/Two_class/model_MPI.csv", "w");
+            if(file == NULL){
+                printf("Error: File not found\n");
+                exit(1);
+            }
+            fprintf(file,"w,b\n");
+            for(int i=0; i<num_features; i++){
+                fprintf(file, "%f,%f\n", w[i], b);
+            }
+            fclose(file);
     }
-    fprintf(file,"w,b\n");
-    for(int i=0; i<num_features; i++){
-        fprintf(file, "%f,%f\n", w[i], b);
-    }
-    fclose(file);}
-    
+
     MPI_Finalize();
 
     return 0;
