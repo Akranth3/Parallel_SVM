@@ -1,4 +1,6 @@
-<<<<<<< HEAD
+Submitted by <br>
+Akranth, ME20B100 <br>
+Sayi Teja, ME20B108<br>
 This repo has the code and results for the parallel implementation of Support vector machine algorithm, parallelization is acheived using OPENMP.
 
 
@@ -17,4 +19,4 @@ Work is currently in progress <br>
 This repo has the code and results for the parallel implementation of Support vector machine algorithm, different libraries are used for parallelization, OPENMP, MPI and OpenACC.<br>
 
 Work was done as part of Parallel Scientific Computing course offered at IIT Madras by Prof Kameswararao Anupindi.
->>>>>>> 77c7b51ff60b5b8c4d77a7b2511cf6e027be4d8f
+
