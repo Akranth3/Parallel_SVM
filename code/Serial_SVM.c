@@ -17,11 +17,10 @@ void read_csv(char *filename, int num_data_points, int num_features, double data
         printf("Error: File not found\n");
         exit(1);
     }
-
+    printf("File opened successfully\n");
     int i = 0;
-    char line[1024];
+    char line[1000];
     while(fgets(line, sizeof(line), file)){
-        // printf("%s", line);
         if(i>0){
             char *token;
             int count = 0;
@@ -51,12 +50,12 @@ int main(){
     printf("Running the serial SVM code\n");
     
     char filename[100];
-    sprintf(filename, "../Data/Two_class/data.csv");
+    sprintf(filename, "../Data/IRIS/Iris.csv");
 
-    int num_points = 200;
-    int num_features = 2; 
+    int num_points = 150;
+    int num_features = 4; 
+
     double data[num_points][num_features+1]; // 2 features and 1 label
-
     //populating the array with the data
     read_csv(filename, num_points, num_features, data);
     printf("Data read successfully\n");
@@ -100,7 +99,7 @@ int main(){
     clock_t end_time = clock();
     double execution_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
     printf("Execution time: %f seconds\n", execution_time);
-    FILE *file = fopen("../model/Two_class/model.csv", "w");
+    FILE *file = fopen("../model/IRIS/model.csv", "w");
     if(file == NULL){
         printf("Error: File not found\n");
         exit(1);

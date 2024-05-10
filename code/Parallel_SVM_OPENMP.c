@@ -1,5 +1,5 @@
 /*This Program has the Parallel implementation of SVM Algorithm using OPENMP*/
-
+// gcc -fopenmp Parallel_SVM_OPENMP.c -o output && ./output
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -48,14 +48,14 @@ void read_csv(char *filename, int num_data_points, int num_features, double data
 
 
 int main(){
-    printf("Running the serial SVM code\n");
+    printf("Running the parallel OPENMP SVM code\n");
     
     char filename[100];
-    sprintf(filename, "../Data/Two_class/data.csv");
+    sprintf(filename, "../Data/Two_class/data_100000.csv");
 
-    int num_points = 200;
+    int num_points = 100000;
     int num_features = 2; 
-    int threads = 4;
+    int threads = 32;
     double data[num_points][num_features+1]; // 2 features and 1 label
 
     //populating the array with the data
@@ -71,7 +71,7 @@ int main(){
     double lamda = 0.01;
 
     //initializing the weights and bias
-    clock_t start_time = clock();
+    double start_time = omp_get_wtime();
     #pragma omp parallel for num_threads(threads) 
     for(int i=0; i<num_features-1; i++){
         w[i] = 0;
@@ -102,10 +102,10 @@ int main(){
         }
     }
 
-    clock_t end_time = clock();
-    double execution_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+    double end_time = omp_get_wtime();
+    double execution_time = (double)(end_time - start_time);
     printf("Execution time: %f seconds\n", execution_time);
-    FILE *file = fopen("../model/Two_class/openmp_model.csv", "w");
+    FILE *file = fopen("../model/Two_class/openmp_model_100000.csv", "w");
     if(file == NULL){
         printf("Error: File not found\n");
         exit(1);

@@ -5,6 +5,7 @@
 #include <string.h>
 #include <time.h>
 #include <openacc.h>
+#include <omp.h>
 
 
 
@@ -50,9 +51,9 @@ int main(){
     printf("Running the Parallel-OPENACC SVM code\n");
     
     char filename[100];
-    sprintf(filename, "../Data/Two_class/data.csv");
+    sprintf(filename, "../Data/Two_class/data_100000.csv");
 
-    int num_points = 200;
+    int num_points = 100000;
     int num_features = 2; 
     double data[num_points][num_features+1]; // 2 features and 1 label
 
@@ -69,15 +70,16 @@ int main(){
     double alpha = 0.001;
     int num_iterations = 1000;
     double lamda = 0.01;
+    int gangs = 1000;
 
-    clock_t start_time = clock();     //timing the code
+    double start_time = omp_get_wtime();     //timing the code
 
 
     //training the model
     # pragma acc data  copyin(data[0:num_points][0:num_features+1]) copyout(w[:num_features], b) 
     {
     
-    # pragma acc parallel loop 
+    # pragma acc parallel loop num_gangs(gangs)
     for(int i=0; i<num_features-1; i++){
         w[i] = 0;
     }
@@ -87,7 +89,7 @@ int main(){
         double *z = (double *)malloc(num_points*sizeof(double));
         double sum, y;
         //present(w[:num_features], data[:num_points][:num_features+1], z[:num_points])
-        # pragma acc parallel loop gang 
+        # pragma acc parallel loop gang num_gangs(gangs)
         for(int j=0; j<num_points; j++){
             sum = 0;
 
@@ -119,11 +121,11 @@ int main(){
 
     }
 
-    clock_t end_time = clock();
-    double execution_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+    clock_t end_time = omp_get_wtime();
+    double execution_time = (double)(end_time - start_time);
     printf("Execution time: %f seconds\n", execution_time);
 
-    FILE *file = fopen("../model/Two_class/model_openacc.csv", "w");
+    FILE *file = fopen("../model/Two_class/model_openacc_100000.csv", "w");
     if(file == NULL){
         printf("Error: File not found\n");
         exit(1);
